@@ -92,6 +92,20 @@ class MockPyKD:
                 "Loaded Script List:\n"
                 "    (none)\n"
             )
+        elif scenario == "js_scripting":
+            self._fixtures[".scriptproviders"] = (
+                "Available Script Providers:\n"
+                "    NatVis (NatVis Visualizer)\n"
+                "    JavaScript (JsProvider)\n"
+            )
+            self._fixtures[".scriptlist"] = (
+                "Loaded Script List:\n"
+                "    (none)\n"
+            )
+            self._fixtures["dx @$scriptContents.run()"] = (
+                "@$scriptContents.run()\n"
+                "    result: analysis complete\n"
+            )
         elif scenario == "dotnet_crash":
             self._fixtures["lm"] = (
                 "start             end                 module name\n"
@@ -149,8 +163,12 @@ class MockPyKD:
 
         # Handle .scriptload commands
         if command.startswith(".scriptload"):
-            if self.scenario == "js_extensions":
+            if self.scenario in ("js_extensions", "js_scripting"):
                 return "JavaScript script successfully loaded."
+            return ""
+
+        # Handle .scriptunload commands
+        if command.startswith(".scriptunload"):
             return ""
 
         # Handle TTD dx command when not in TTD scenario

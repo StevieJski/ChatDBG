@@ -65,6 +65,7 @@ class WinDbgDialog(DBGDialog):
         super().__init__(prompt)
         self._is_dotnet = None  # Cached .NET detection
         self._is_ttd = None  # Cached TTD detection
+        self._has_js_provider = None  # Cached JsProvider detection
         self._js_extension_tools = []
         self._load_js_extensions()
 
@@ -237,6 +238,17 @@ class WinDbgDialog(DBGDialog):
                 self._is_ttd = False
         return self._is_ttd
 
+    def _detect_jsprovider(self):
+        if self._has_js_provider is None:
+            try:
+                output = pykd.dbgCommand(".scriptproviders")
+                self._has_js_provider = (
+                    output is not None and "javascript" in output.lower()
+                )
+            except Exception:
+                self._has_js_provider = False
+        return self._has_js_provider
+
     def _load_js_extensions(self):
         """Discover, load, and generate tool functions for JS extensions."""
         try:
@@ -385,6 +397,13 @@ class WinDbgDialog(DBGDialog):
         # Add JS extension tools if any were loaded
         if self._js_extension_tools:
             for tool_func in self._js_extension_tools:
+                functions.append(types.MethodType(tool_func, self))
+
+        # Add JS scripting tool if JsProvider is available
+        if self._detect_jsprovider():
+            from chatdbg.windbg_js_scripting import JS_SCRIPTING_TOOLS
+
+            for tool_func in JS_SCRIPTING_TOOLS:
                 functions.append(types.MethodType(tool_func, self))
 
         return functions

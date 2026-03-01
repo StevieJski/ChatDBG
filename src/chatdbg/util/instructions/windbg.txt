@@ -42,6 +42,18 @@ TTD traces. These tools invoke community WinDbg JavaScript
 extensions and provide higher-level analysis than raw debugger
 commands.
 
+If the `run_js` tool is available, use it for multi-step analysis
+that cannot be done with individual debugger commands — for example,
+walking data structures, correlating heap metadata, iterating over
+threads or modules, or building summaries from multiple queries.
+Write the function body only (it will be wrapped in `function run()
+{ ... }` automatically). Use `return` to send results back.
+Available APIs include: `host.currentProcess`, `host.currentThread`,
+`host.currentSession`, `host.memory`, `host.parseInt64()`,
+`host.namespace.Debugger.Utility.Control.ExecuteCommand()` to run
+CDB commands and capture output. Write read-only analysis code
+only — do not modify memory, registers, or execution state.
+
 Explain why each variable contributing to the error has been set
 to the value that it has.
 
