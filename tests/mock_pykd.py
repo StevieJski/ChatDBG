@@ -75,7 +75,17 @@ class MockPyKD:
 
         # Build scenario-specific fixtures
         self._fixtures = dict(_FIXTURES)
-        if scenario == "dotnet_crash":
+        if scenario == "js_extensions":
+            self._fixtures[".scriptproviders"] = (
+                "Available Script Providers:\n"
+                "    NatVis (NatVis Visualizer)\n"
+                "    JavaScript (JsProvider)\n"
+            )
+            self._fixtures[".scriptlist"] = (
+                "Loaded Script List:\n"
+                "    (none)\n"
+            )
+        elif scenario == "dotnet_crash":
             self._fixtures["lm"] = (
                 "start             end                 module name\n"
                 "00007ff7`12340000 00007ff7`12350000   DotnetCrash   (deferred)\n"
@@ -128,6 +138,12 @@ class MockPyKD:
 
         # Handle .frame commands
         if command.startswith(".frame"):
+            return ""
+
+        # Handle .scriptload commands
+        if command.startswith(".scriptload"):
+            if self.scenario == "js_extensions":
+                return "JavaScript script successfully loaded."
             return ""
 
         # Handle TTD dx command when not in TTD scenario

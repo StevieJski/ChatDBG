@@ -98,6 +98,11 @@ class ChatDBGConfig(Configurable):
         help="Skip LLM calls, print prompt instead (for testing)",
     ).tag(config=True)
 
+    js_extensions = Unicode(
+        _chatdbg_get_env("js_extensions", ""),
+        help="Semicolon-separated paths to WinDbg JavaScript extensions to load",
+    ).tag(config=True)
+
     _user_configurable = [
         log,
         model,
@@ -106,6 +111,7 @@ class ChatDBGConfig(Configurable):
         module_whitelist,
         unsafe,
         dry_run,
+        js_extensions,
     ]
 
     def _parser(self):
@@ -138,6 +144,7 @@ class ChatDBGConfig(Configurable):
             "instructions": self.instructions,
             "module_whitelist": self.module_whitelist,
             "dry_run": self.dry_run,
+            "js_extensions": self.js_extensions,
         }
 
     def parse_user_flags(self, argv: list[str]) -> None:

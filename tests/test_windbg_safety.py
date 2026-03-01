@@ -165,6 +165,30 @@ class TestBlockedCommands:
         assert windbg_command_is_safe(".reload") is False
 
 
+class TestScriptCommands:
+    """Script provider commands: read-only queries allowed, loading blocked."""
+
+    def test_scriptproviders_allowed(self):
+        assert windbg_command_is_safe(".scriptproviders") is True
+
+    def test_scriptlist_allowed(self):
+        assert windbg_command_is_safe(".scriptlist") is True
+
+    def test_scriptload_blocked(self):
+        assert windbg_command_is_safe('.scriptload "C:\\ext.js"') is False
+
+    def test_scriptrun_blocked(self):
+        assert windbg_command_is_safe('.scriptrun "C:\\ext.js"') is False
+
+    def test_dx_scriptcontents_blocked(self):
+        """LLM must use dedicated tools, not raw dx calls to script functions."""
+        assert windbg_command_is_safe("dx @$scriptContents.analyze()") is False
+
+    def test_dx_scriptcontents_property_blocked(self):
+        """Even property-looking calls with parentheses are blocked."""
+        assert windbg_command_is_safe("dx @$scriptContents.func()") is False
+
+
 class TestEdgeCases:
     """Edge cases and whitespace handling."""
 

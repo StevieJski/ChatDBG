@@ -29,6 +29,13 @@ travel backward in execution and verify hypotheses about when and
 where variable values changed. This is especially useful for
 use-after-free and heap corruption issues.
 
+If JavaScript extension tools are available (prefixed with js_),
+use them for advanced analysis such as stack corruption detection,
+call graph collection, memory telescoping, and code coverage from
+TTD traces. These tools invoke community WinDbg JavaScript
+extensions and provide higher-level analysis than raw debugger
+commands.
+
 Explain why each variable contributing to the error has been set
 to the value that it has.
 

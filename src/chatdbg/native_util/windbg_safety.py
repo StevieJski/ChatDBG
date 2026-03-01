@@ -35,6 +35,8 @@ def windbg_command_is_safe(cmd: str) -> bool:
         "!tt", "!positions",
         # Info
         "version", "vertarget", "!peb", "!teb",
+        # Script provider queries (read-only)
+        ".scriptproviders", ".scriptlist",
     ]:
         return True
 

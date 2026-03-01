@@ -65,6 +65,8 @@ class WinDbgDialog(DBGDialog):
         super().__init__(prompt)
         self._is_dotnet = None  # Cached .NET detection
         self._is_ttd = None  # Cached TTD detection
+        self._js_extension_tools = []
+        self._load_js_extensions()
 
     def _run_one_command(self, command):
         try:
@@ -235,6 +237,29 @@ class WinDbgDialog(DBGDialog):
                 self._is_ttd = False
         return self._is_ttd
 
+    def _load_js_extensions(self):
+        """Discover, load, and generate tool functions for JS extensions."""
+        try:
+            from chatdbg.windbg_js_extensions import (
+                discover_js_extensions,
+                load_js_extensions,
+                make_tool_functions,
+            )
+
+            extensions = discover_js_extensions(
+                self._run_one_command, chatdbg_config.js_extensions
+            )
+            if not extensions:
+                return
+
+            load_results = load_js_extensions(self._run_one_command, extensions)
+            loaded = [
+                ext for ext in extensions if load_results.get(ext["name"])
+            ]
+            self._js_extension_tools = make_tool_functions(loaded)
+        except Exception:
+            self._js_extension_tools = []
+
     def _merge_managed_frames(self, summaries):
         """Attempt to merge CLRStack frames into the native summary."""
         try:
@@ -355,6 +380,11 @@ class WinDbgDialog(DBGDialog):
             from chatdbg.windbg_tools import DOTNET_TOOLS
 
             for tool_func in DOTNET_TOOLS:
+                functions.append(types.MethodType(tool_func, self))
+
+        # Add JS extension tools if any were loaded
+        if self._js_extension_tools:
+            for tool_func in self._js_extension_tools:
                 functions.append(types.MethodType(tool_func, self))
 
         return functions

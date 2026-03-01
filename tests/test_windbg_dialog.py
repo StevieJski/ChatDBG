@@ -236,3 +236,128 @@ class TestSupportedFunctionsWithDotnet:
         functions = dialog._supported_functions()
         func_docs = " ".join(f.__doc__ or "" for f in functions)
         assert "managed_stack" in func_docs
+
+
+class TestJsExtensionDiscovery:
+    """Test JS extension discovery via the dialog."""
+
+    def test_no_jsprovider_no_tools(self, dialog):
+        """Without JsProvider, no JS extension tools are registered."""
+        assert dialog._js_extension_tools == []
+
+    def test_no_jsprovider_supported_functions_unchanged(self, dialog):
+        """Supported functions should not include JS tools when no provider."""
+        functions = dialog._supported_functions()
+        func_docs = " ".join(f.__doc__ or "" for f in functions)
+        assert "js_lldext" not in func_docs
+
+    def test_jsprovider_available_with_scripts(self, install_mock_pykd):
+        """When JsProvider is present and scripts exist, tools are registered."""
+        import tempfile
+        import os
+
+        # Switch to js_extensions scenario
+        install_mock_pykd.scenario = "js_extensions"
+        install_mock_pykd._fixtures[".scriptproviders"] = (
+            "Available Script Providers:\n"
+            "    NatVis (NatVis Visualizer)\n"
+            "    JavaScript (JsProvider)\n"
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create a script file that matches the lldext registry entry
+            script_path = os.path.join(tmpdir, "lldext.js")
+            with open(script_path, "w") as f:
+                f.write("// mock lldext")
+
+            from chatdbg.util.config import chatdbg_config
+            original_js = chatdbg_config.js_extensions
+            try:
+                chatdbg_config.js_extensions = tmpdir
+
+                # Force reimport to pick up fresh mock state
+                for mod_name in list(sys.modules.keys()):
+                    if "chatdbg_windbg" in mod_name:
+                        del sys.modules[mod_name]
+
+                from chatdbg.chatdbg_windbg import WinDbgDialog
+                dialog = WinDbgDialog("(test) ")
+
+                assert len(dialog._js_extension_tools) > 0
+                tool_names = [t.__name__ for t in dialog._js_extension_tools]
+                assert "js_lldext_analyze" in tool_names
+            finally:
+                chatdbg_config.js_extensions = original_js
+
+    def test_js_tools_appear_in_supported_functions(self, install_mock_pykd):
+        """JS extension tools should appear in _supported_functions()."""
+        import tempfile
+        import os
+
+        install_mock_pykd.scenario = "js_extensions"
+        install_mock_pykd._fixtures[".scriptproviders"] = (
+            "Available Script Providers:\n"
+            "    JavaScript (JsProvider)\n"
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            script_path = os.path.join(tmpdir, "lldext.js")
+            with open(script_path, "w") as f:
+                f.write("// mock")
+
+            from chatdbg.util.config import chatdbg_config
+            original_js = chatdbg_config.js_extensions
+            try:
+                chatdbg_config.js_extensions = tmpdir
+
+                for mod_name in list(sys.modules.keys()):
+                    if "chatdbg_windbg" in mod_name:
+                        del sys.modules[mod_name]
+
+                from chatdbg.chatdbg_windbg import WinDbgDialog
+                dialog = WinDbgDialog("(test) ")
+
+                functions = dialog._supported_functions()
+                func_docs = " ".join(f.__doc__ or "" for f in functions)
+                assert "js_lldext_analyze" in func_docs
+            finally:
+                chatdbg_config.js_extensions = original_js
+
+    def test_graceful_failure_on_load_error(self, install_mock_pykd):
+        """If script loading fails, dialog still works without JS tools."""
+        import tempfile
+        import os
+
+        install_mock_pykd.scenario = "js_extensions"
+        install_mock_pykd._fixtures[".scriptproviders"] = (
+            "JavaScript (JsProvider)\n"
+        )
+        # Override scriptload to return error
+        original_dbgCommand = install_mock_pykd.dbgCommand
+        def error_scriptload(cmd):
+            if cmd.startswith(".scriptload"):
+                return "Error: unable to load script"
+            return original_dbgCommand(cmd)
+        install_mock_pykd.dbgCommand = error_scriptload
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            script_path = os.path.join(tmpdir, "lldext.js")
+            with open(script_path, "w") as f:
+                f.write("// mock")
+
+            from chatdbg.util.config import chatdbg_config
+            original_js = chatdbg_config.js_extensions
+            try:
+                chatdbg_config.js_extensions = tmpdir
+
+                for mod_name in list(sys.modules.keys()):
+                    if "chatdbg_windbg" in mod_name:
+                        del sys.modules[mod_name]
+
+                from chatdbg.chatdbg_windbg import WinDbgDialog
+                dialog = WinDbgDialog("(test) ")
+
+                # No tools should be loaded since scriptload returned error
+                assert dialog._js_extension_tools == []
+            finally:
+                chatdbg_config.js_extensions = original_js
