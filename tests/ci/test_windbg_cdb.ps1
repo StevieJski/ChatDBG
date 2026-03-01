@@ -40,9 +40,13 @@ $clExe = Get-Command cl.exe -ErrorAction SilentlyContinue
 $gccExe = Get-Command gcc.exe -ErrorAction SilentlyContinue
 
 if ($clExe) {
+    $ErrorActionPreference = "Continue"
     & cl.exe /Zi /Od /Fe:$SampleExe $SampleSrc 2>&1 | Out-Null
+    $ErrorActionPreference = "Stop"
 } elseif ($gccExe) {
+    $ErrorActionPreference = "Continue"
     & gcc.exe -g -O0 -o $SampleExe $SampleSrc 2>&1 | Out-Null
+    $ErrorActionPreference = "Stop"
 } else {
     Write-Fail "No C compiler found (cl.exe or gcc.exe). Skipping CDB test."
     exit 0  # Don't fail CI if no compiler
@@ -96,7 +100,7 @@ try {
     exit 1
 } finally {
     Remove-Item $cdbScriptFile -ErrorAction SilentlyContinue
-    Remove-Item $env:CHATDBG_DRY_RUN
+    Remove-Item env:CHATDBG_DRY_RUN -ErrorAction SilentlyContinue
 }
 
 # --- Step 4: Validate output ---
