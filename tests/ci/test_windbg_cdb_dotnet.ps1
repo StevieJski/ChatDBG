@@ -20,7 +20,7 @@
 $ErrorActionPreference = "Stop"
 
 # --- Configuration ---
-$RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
+$RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $SampleDir = Join-Path $RepoRoot "samples\windbg\dotnet"
 $ChatDBGScript = Join-Path $RepoRoot "src\chatdbg\chatdbg_windbg.py"
 
@@ -78,24 +78,22 @@ Write-Status "Running CDB with ChatDBG (dry-run mode)..."
 
 $env:CHATDBG_DRY_RUN = "1"
 
-# CDB script: load pykd, run chatdbg, show stack, quit
-$cdbScript = @"
-.load pykd
-!py -g "$ChatDBGScript"
-k
-q
-"@
-
-$cdbScriptFile = Join-Path $env:TEMP "chatdbg_cdb_dotnet_test.txt"
-$cdbScript | Out-File -FilePath $cdbScriptFile -Encoding ascii
+# CDB initial command (-c):
+# 1. Ignore first-chance CLR exceptions (e0434352) so the runtime can handle them
+# 2. Continue past the initial loader breakpoint (g) — the CLR loads and the app
+#    runs until it crashes with an access violation (NullReferenceException)
+# 3. CDB breaks on the first-chance AV; show module list (lm) and stack (k), quit
+#
+# Note: use -c (inline initial command) instead of -cf (command file) because
+# -cf does not reliably capture output after 'g' resumes execution.
+$cdbInitCmd = "sxd e0434352;g;lm;k;q"
 
 try {
-    $output = & $cdbExe $SampleExe "nullref" -cf $cdbScriptFile 2>&1 | Out-String
+    $output = & $cdbExe -c $cdbInitCmd $SampleExe "nullref" 2>&1 | Out-String
 } catch {
     Write-Fail "CDB execution failed: $_"
     exit 1
 } finally {
-    Remove-Item $cdbScriptFile -ErrorAction SilentlyContinue
     Remove-Item env:CHATDBG_DRY_RUN -ErrorAction SilentlyContinue
 }
 

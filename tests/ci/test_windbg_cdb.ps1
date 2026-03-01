@@ -22,7 +22,7 @@
 $ErrorActionPreference = "Stop"
 
 # --- Configuration ---
-$RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
+$RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $SampleDir = Join-Path $RepoRoot "samples\windbg"
 $SampleSrc = Join-Path $SampleDir "crash_sample.c"
 $SampleExe = Join-Path $SampleDir "crash_sample.exe"
