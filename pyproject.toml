@@ -43,4 +43,5 @@ print_chatdbg_log = "chatdbg.util.plog:main"
 "Bug Tracker" = "https://github.com/plasma-umass/ChatDBG/issues"
 
 [project.optional-dependencies]
-windbg = ["pykd>=0.3.4"]
+windbg = []  # No extra deps — uses CDB subprocess directly
+windbg-pykd = ["pykd>=0.3.4"]  # Legacy: direct pykd usage inside WinDbg
