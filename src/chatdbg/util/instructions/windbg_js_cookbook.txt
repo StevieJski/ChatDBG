@@ -1,0 +1,120 @@
+## WinDbg JavaScript Scripting Reference (JsProvider)
+
+### Core Host Object Model
+
+- `host.currentProcess` — current debuggee process; `.Threads`, `.Modules`
+- `host.currentThread` — current thread; `.Stack.Frames` for stack frames
+- `host.currentSession` — debugger session; `.Attributes.Target`
+- `host.memory` — `readMemoryValues(addr, count, size)` returns typed array
+- `host.parseInt64("0xABCD")` — parse string to Int64 (**must be a string, not a number**)
+- `host.Int64(lo, hi)` — construct 64-bit integer; supports `.add()`, `.subtract()`, `.bitwiseAnd()`
+- `host.diagnostics.debugLog(msg)` — print debug output
+
+### Executing CDB Commands
+
+`host.namespace.Debugger.Utility.Control.ExecuteCommand(cmd)` returns an
+**iterable of lines**, not a string. Collect output like this:
+
+```js
+var lines = [];
+for (var line of host.namespace.Debugger.Utility.Control.ExecuteCommand("k")) {
+    lines.push(line);
+}
+return lines.join("\n");
+```
+
+### Recipes
+
+**Thread + stack enumeration:**
+```js
+var results = [];
+for (var thread of host.currentProcess.Threads) {
+    try {
+        var frames = [];
+        for (var frame of thread.Stack.Frames) {
+            frames.push(frame.toString());
+        }
+        results.push("Thread " + thread.Id + ":\n" + frames.join("\n"));
+    } catch(e) { /* thread may not be accessible */ }
+}
+return results.join("\n\n");
+```
+
+**Module listing:**
+```js
+var mods = [];
+for (var mod of host.currentProcess.Modules) {
+    mods.push(mod.Name + " @ " + mod.BaseAddress.toString(16));
+}
+return mods.join("\n");
+```
+
+**Memory reading (bytes to string):**
+```js
+var addr = host.parseInt64("0x7FFE0000");
+var bytes = host.memory.readMemoryValues(addr, 64, 1);
+var chars = [];
+for (var b of bytes) {
+    if (b === 0) break;
+    chars.push(String.fromCharCode(b));
+}
+return chars.join("");
+```
+
+**CDB command output capture and parsing:**
+```js
+var heapLines = [];
+for (var line of host.namespace.Debugger.Utility.Control.ExecuteCommand("!heap -s")) {
+    if (line.indexOf("Heap") !== -1) heapLines.push(line.trim());
+}
+return heapLines.join("\n");
+```
+
+**Pointer chain walking (telescope):**
+```js
+var addr = host.parseInt64("0x...");
+var chain = [];
+for (var i = 0; i < 8; i++) {
+    try {
+        var val = host.memory.readMemoryValues(addr, 1, 8)[0];
+        chain.push(addr.toString(16) + " -> " + val.toString(16));
+        addr = val;
+    } catch(e) { chain.push(addr.toString(16) + " -> ???"); break; }
+}
+return chain.join("\n");
+```
+
+### Common Pitfalls
+
+1. **ExecuteCommand returns iterable, not string.**
+   Wrong: `var s = ExecuteCommand("k"); s.indexOf(...)`
+   Right: collect lines with `for...of` into an array, then `.join("\n")`
+
+2. **Use `for...of`, not `for...in` for host objects.**
+   Wrong: `for (var t in host.currentProcess.Threads)`
+   Right: `for (var t of host.currentProcess.Threads)`
+
+3. **`host.parseInt64()` takes a string, not a number.**
+   Wrong: `host.parseInt64(0x1000)`
+   Right: `host.parseInt64("0x1000")`
+
+4. **Int64 arithmetic uses methods, not operators.**
+   Wrong: `addr + 8`
+   Right: `addr.add(host.parseInt64("8"))`
+
+5. **Host objects may throw on inaccessible state.**
+   Always wrap per-thread and per-frame iteration in try/catch.
+
+### Error Handling Pattern
+
+```js
+var output = [];
+for (var thread of host.currentProcess.Threads) {
+    try {
+        // per-thread work
+    } catch(e) {
+        output.push("Thread " + thread.Id + ": error - " + e.message);
+    }
+}
+return output.join("\n");
+```

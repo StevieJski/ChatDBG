@@ -1,0 +1,71 @@
+## .NET Debugging Reference (SOS)
+
+### Recommended Investigation Workflow
+
+Follow this order for efficient .NET crash diagnosis:
+
+1. `print_exception` — get exception type, message, and inner exception chain
+2. `managed_stack` — CLR frames with arguments/locals on the faulting thread
+3. `managed_threads` — overview of all threads; find threads with exceptions
+4. `dump_stack_objects` — find managed objects on the current stack
+5. `inspect_object <addr>` — drill into specific objects found above
+6. For memory leaks: `dump_heap_stat` → `dump_heap_type <type>` → `gc_root <addr>`
+7. For deadlocks/hangs: `ee_stack` to see all managed stacks at once
+8. `name_to_ee` — resolve type names to MethodTable addresses
+
+### Additional SOS Commands (via `debug` tool)
+
+These are not wrapped as dedicated tools but are available via the `debug` tool:
+
+- `!DumpArray <addr>` — dump array contents
+- `!DumpVC <MT> <addr>` — dump value type (struct) at address
+- `!DumpDomain` — list all AppDomains and loaded assemblies
+- `!DumpModule <addr>` — module details including metadata token ranges
+- `!FinalizeQueue` — objects waiting for finalization (leak indicator)
+- `!SyncBlk` — monitor lock info for deadlock diagnosis
+- `!ThreadPool` — thread pool stats (queue length, workers, timers)
+- `!DumpAsync` — async state machine details (.NET Core 3+)
+
+### Interpreting SOS Output
+
+**MethodTable (MT) addresses:** First column in `!DumpHeap` output. Use with
+`!DumpObj -mt <MT>` to inspect objects of that type.
+
+**`!pe` output:** Read HResult for Win32 error mapping. Follow the
+InnerException chain — the root cause is usually the innermost exception.
+
+**`!Threads` flags:** Lock count > 0 indicates held locks. The exception
+column shows unhandled exceptions per thread.
+
+**`!GCRoot` output:**
+- "Pinned handle" = P/Invoke or fixed buffer
+- "Strong handle" = static reference
+- "Local variable" on a thread stack = still in scope
+
+### Common .NET Crash Patterns
+
+**NullReferenceException:** Check which object reference is null in
+`managed_stack` locals. Use `inspect_object` on surrounding objects to find
+which field was expected to be initialized.
+
+**ObjectDisposedException:** Look for disposed flags (e.g., `_disposed = True`)
+in `inspect_object`. Trace disposal with `gc_root` to find who holds a
+reference to the disposed object.
+
+**StackOverflowException:** Look for recursive calls in `ee_stack`. The
+repeating frame pattern reveals the unbounded recursion.
+
+**OutOfMemoryException:** Use `dump_heap_stat` to find type accumulation.
+Use `gc_root` on a sample instance to find why objects are retained. Check
+`!FinalizeQueue` for finalizer thread blockage.
+
+**Deadlocks:** Use `managed_threads` to find threads with lock count > 0.
+Use `!SyncBlk` to see which threads own which monitors. Cross-reference
+with `ee_stack` to see where each thread is waiting.
+
+### Note on Extensions
+
+PSSCOR2/PSSCOR4 and SOSEX are .NET Framework-only and not available for
+.NET Core/6/8+. The built-in SOS extension covers all modern .NET scenarios.
+MEX (`!dae`, `!us`) provides useful additions but requires separate
+installation — if available, these commands can be run via the `debug` tool.

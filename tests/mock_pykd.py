@@ -113,6 +113,27 @@ class MockPyKD:
                 "00007ff8`10000000 00007ff8`10500000   coreclr   (deferred)\n"
                 "00007ff8`23450000 00007ff8`23550000   KERNEL32   (deferred)\n"
             )
+        elif scenario == "dotnet_js":
+            # Combined: CLR loaded AND JsProvider available
+            self._fixtures["lm"] = (
+                "start             end                 module name\n"
+                "00007ff7`12340000 00007ff7`12350000   DotnetCrash   (deferred)\n"
+                "00007ff8`10000000 00007ff8`10500000   coreclr   (deferred)\n"
+                "00007ff8`23450000 00007ff8`23550000   KERNEL32   (deferred)\n"
+            )
+            self._fixtures[".scriptproviders"] = (
+                "Available Script Providers:\n"
+                "    NatVis (NatVis Visualizer)\n"
+                "    JavaScript (JsProvider)\n"
+            )
+            self._fixtures[".scriptlist"] = (
+                "Loaded Script List:\n"
+                "    (none)\n"
+            )
+            self._fixtures["dx @$scriptContents.run()"] = (
+                "@$scriptContents.run()\n"
+                "    result: analysis complete\n"
+            )
         elif scenario == "ttd_trace":
             self._fixtures["dx @$curprocess.TTD"] = (
                 "@$curprocess.TTD\n"

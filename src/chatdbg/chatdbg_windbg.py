@@ -297,6 +297,29 @@ class WinDbgDialog(DBGDialog):
     # Prompt methods
     # ------------------------------------------------------------------
 
+    def initial_prompt_instructions(self):
+        base = super().initial_prompt_instructions()
+        instructions_dir = os.path.join(
+            os.path.dirname(__file__), "util", "instructions"
+        )
+        if self._detect_dotnet():
+            base = self._append_cookbook(
+                base, instructions_dir, "windbg_dotnet_cookbook.txt"
+            )
+        if self._detect_jsprovider():
+            base = self._append_cookbook(
+                base, instructions_dir, "windbg_js_cookbook.txt"
+            )
+        return base
+
+    def _append_cookbook(self, base, directory, filename):
+        try:
+            path = os.path.join(directory, filename)
+            with open(path, "r") as f:
+                return base + "\n\n" + f.read()
+        except FileNotFoundError:
+            return base
+
     _ANALYZE_MAX_CHARS = 2048
 
     def _initial_prompt_error_message(self):

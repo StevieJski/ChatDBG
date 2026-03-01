@@ -81,7 +81,7 @@ def llm_run_js(self, code: str):
     """
     {
         "name": "run_js",
-        "description": "Execute custom JavaScript code inside CDB's JsProvider for multi-step analysis. Write the function body (not the function declaration) — it will be wrapped in a run() function automatically. Use `return` to send results back. Available APIs: host.currentProcess, host.currentThread, host.currentSession, host.memory, host.parseInt64(), host.namespace.Debugger, host.diagnostics.debugLog(). Use host.namespace.Debugger.Utility.Control.ExecuteCommand() to run CDB commands and capture output. Write read-only analysis code only.",
+        "description": "Execute custom JavaScript code inside CDB's JsProvider for multi-step analysis. Write the function body (not the function declaration) — it will be wrapped in a run() function automatically. Use `return` to send results back. Available APIs: host.currentProcess, host.currentThread, host.currentSession, host.memory, host.parseInt64(), host.namespace.Debugger, host.diagnostics.debugLog(). Use host.namespace.Debugger.Utility.Control.ExecuteCommand() to run CDB commands and capture output. Write read-only analysis code only. IMPORTANT: ExecuteCommand() returns an iterable of lines, NOT a string — collect with for...of into an array. Use for...of (not for...in) for all host objects and collections. host.parseInt64() takes a STRING argument (e.g. '0x1000'), not a number.",
         "parameters": {
             "type": "object",
             "properties": {
