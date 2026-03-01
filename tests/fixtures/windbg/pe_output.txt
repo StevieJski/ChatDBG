@@ -1,0 +1,23 @@
+Exception object: 000001c4a8034500
+Exception type:   System.NullReferenceException
+Message:          Object reference not set to an instance of an object.
+InnerException:   000001c4a8034600, Use "!PrintException 000001c4a8034600" to see more.
+StackTrace (generated):
+    SP               IP               Function
+    000000AB1234EF00 00007FF812345678 DotnetCrash.Program.ProcessData(System.String)
+    000000AB1234EF40 00007FF823456789 DotnetCrash.Program.Main(System.String[])
+
+StackTraceString: <none>
+HResult: 80004003
+
+Nested exception -------------------------------------------------------------
+Exception object: 000001c4a8034600
+Exception type:   System.InvalidOperationException
+Message:          Operation is not valid due to the current state of the object.
+InnerException:   <none>
+StackTrace (generated):
+    SP               IP               Function
+    000000AB1234EE80 00007FF812345600 DotnetCrash.Program.InitializeData()
+
+StackTraceString: <none>
+HResult: 80131509

@@ -1,0 +1,6 @@
+Module:      00007ff81234abcd
+Assembly:    DotnetCrash.dll
+Token:       0x02000003
+MethodTable: 00007ff81234a005
+EEClass:     00007ff81234ef02
+Name:        DotnetCrash.Config

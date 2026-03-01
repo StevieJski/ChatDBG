@@ -184,6 +184,165 @@ def llm_dump_stack_objects(self):
     return cmd, output
 
 
+def llm_print_exception(self):
+    """
+    {
+        "name": "print_exception",
+        "description": "Print the current managed exception with the full inner exception chain. Use this first when a .NET exception is the crash cause — it shows exception type, message, HResult, and nested inner exceptions.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    }
+    """
+    cmd = "!pe -nested"
+    try:
+        output = self._run_one_command(cmd)
+    except Exception as e:
+        return cmd, f"Error printing exception: {e}"
+    return cmd, output
+
+
+def llm_dump_heap_stat(self):
+    """
+    {
+        "name": "dump_heap_stat",
+        "description": "Show .NET managed heap statistics grouped by type. Displays object count and total size for each type. Useful for identifying memory leaks or unexpected object accumulation.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    }
+    """
+    cmd = "!DumpHeap -stat"
+    try:
+        output = self._run_one_command(cmd)
+    except Exception as e:
+        return cmd, f"Error dumping heap stats: {e}"
+    return cmd, output
+
+
+def llm_dump_heap_type(self, typename: str):
+    """
+    {
+        "name": "dump_heap_type",
+        "description": "Find all instances of a specific .NET type on the managed heap. Returns addresses, method tables, and sizes. Use this after dump_heap_stat to drill into a suspicious type.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "typename": {
+                    "type": "string",
+                    "description": "The full .NET type name to search for (e.g., 'System.String' or 'MyApp.Config')."
+                }
+            },
+            "required": [ "typename" ]
+        }
+    }
+    """
+    cmd = f"!DumpHeap -type {typename}"
+    try:
+        output = self._run_one_command(cmd)
+    except Exception as e:
+        return cmd, f"Error dumping heap for type: {e}"
+    return cmd, output
+
+
+def llm_gc_root(self, address: str):
+    """
+    {
+        "name": "gc_root",
+        "description": "Trace GC roots for a .NET object — shows why the object is alive. Displays the reference chain from root (stack, handle table, static) to the target object. Essential for diagnosing memory leaks.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "description": "The memory address of the .NET object to trace roots for (e.g., '000001c4a8033040')."
+                }
+            },
+            "required": [ "address" ]
+        }
+    }
+    """
+    cmd = f"!GCRoot {address}"
+    try:
+        output = self._run_one_command(cmd)
+    except Exception as e:
+        return cmd, f"Error tracing GC roots: {e}"
+    return cmd, output
+
+
+def llm_managed_threads(self):
+    """
+    {
+        "name": "managed_threads",
+        "description": "List all managed .NET threads with their state, GC mode, exception info, apartment type, and lock count. Use this to get an overview of thread activity and find threads with unhandled exceptions.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    }
+    """
+    cmd = "!Threads"
+    try:
+        output = self._run_one_command(cmd)
+    except Exception as e:
+        return cmd, f"Error listing managed threads: {e}"
+    return cmd, output
+
+
+def llm_ee_stack(self):
+    """
+    {
+        "name": "ee_stack",
+        "description": "Show managed call stacks for ALL .NET threads at once. Useful for deadlock analysis and getting a complete picture of what every managed thread is doing.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    }
+    """
+    cmd = "!EEStack"
+    try:
+        output = self._run_one_command(cmd)
+    except Exception as e:
+        return cmd, f"Error getting EE stacks: {e}"
+    return cmd, output
+
+
+def llm_name_to_ee(self, module: str, typename: str):
+    """
+    {
+        "name": "name_to_ee",
+        "description": "Resolve a .NET type or method name to its internal runtime addresses (MethodTable, EEClass). Use this to look up a type before using inspect_object or dump_heap_type.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "module": {
+                    "type": "string",
+                    "description": "The module name containing the type (e.g., 'DotnetCrash' or 'System.Private.CoreLib')."
+                },
+                "typename": {
+                    "type": "string",
+                    "description": "The full type or method name to resolve (e.g., 'DotnetCrash.Config' or 'System.String')."
+                }
+            },
+            "required": [ "module", "typename" ]
+        }
+    }
+    """
+    cmd = f"!Name2EE {module} {typename}"
+    try:
+        output = self._run_one_command(cmd)
+    except Exception as e:
+        return cmd, f"Error resolving name: {e}"
+    return cmd, output
+
+
 # ---------------------------------------------------------------------------
 # Convenience lists for conditional registration
 # ---------------------------------------------------------------------------
@@ -199,4 +358,11 @@ DOTNET_TOOLS = [
     llm_managed_stack,
     llm_inspect_object,
     llm_dump_stack_objects,
+    llm_print_exception,
+    llm_dump_heap_stat,
+    llm_dump_heap_type,
+    llm_gc_root,
+    llm_managed_threads,
+    llm_ee_stack,
+    llm_name_to_ee,
 ]

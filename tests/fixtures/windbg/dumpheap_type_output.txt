@@ -1,0 +1,8 @@
+         Address               MT     Size
+000001c4a8033040 00007ff81234a005       64
+000001c4a8033100 00007ff81234a005       64
+
+Statistics:
+              MT    Count    TotalSize Class Name
+00007ff81234a005        2          128 DotnetCrash.Config
+Total 2 objects

@@ -18,6 +18,13 @@ from chatdbg.windbg_tools import (
     llm_managed_stack,
     llm_inspect_object,
     llm_dump_stack_objects,
+    llm_print_exception,
+    llm_dump_heap_stat,
+    llm_dump_heap_type,
+    llm_gc_root,
+    llm_managed_threads,
+    llm_ee_stack,
+    llm_name_to_ee,
     TTD_TOOLS,
     DOTNET_TOOLS,
 )
@@ -204,6 +211,176 @@ RSP/REG          Object           Name
         assert "Error dumping stack objects" in out
 
 
+class TestPrintException:
+    CANNED_OUTPUT = """\
+Exception object: 000001c4a8034500
+Exception type:   System.NullReferenceException
+Message:          Object reference not set to an instance of an object.
+InnerException:   000001c4a8034600, Use "!PrintException 000001c4a8034600" to see more.
+StackTrace (generated):
+    SP               IP               Function
+    000000AB1234EF00 00007FF812345678 DotnetCrash.Program.ProcessData(System.String)
+
+Nested exception -------------------------------------------------------------
+Exception object: 000001c4a8034600
+Exception type:   System.InvalidOperationException
+Message:          Operation is not valid due to the current state of the object."""
+
+    def test_basic_call(self, dialog):
+        dialog._run_one_command.return_value = self.CANNED_OUTPUT
+        cmd, out = llm_print_exception(dialog)
+        assert cmd == "!pe -nested"
+        dialog._run_one_command.assert_called_once_with("!pe -nested")
+        assert "NullReferenceException" in out
+        assert "Nested exception" in out
+
+    def test_error_handling(self, dialog):
+        dialog._run_one_command.side_effect = RuntimeError("no exception")
+        cmd, out = llm_print_exception(dialog)
+        assert "Error printing exception" in out
+
+
+class TestDumpHeapStat:
+    CANNED_OUTPUT = """\
+Statistics:
+              MT    Count    TotalSize Class Name
+00007ff81234a004      312        7,488 System.String
+00007ff81234a005        2          128 DotnetCrash.Config
+Total 402 objects"""
+
+    def test_basic_call(self, dialog):
+        dialog._run_one_command.return_value = self.CANNED_OUTPUT
+        cmd, out = llm_dump_heap_stat(dialog)
+        assert cmd == "!DumpHeap -stat"
+        dialog._run_one_command.assert_called_once_with("!DumpHeap -stat")
+        assert "System.String" in out
+        assert "Total 402 objects" in out
+
+    def test_error_handling(self, dialog):
+        dialog._run_one_command.side_effect = RuntimeError("heap walk failed")
+        cmd, out = llm_dump_heap_stat(dialog)
+        assert "Error dumping heap stats" in out
+
+
+class TestDumpHeapType:
+    CANNED_OUTPUT = """\
+         Address               MT     Size
+000001c4a8033040 00007ff81234a005       64
+000001c4a8033100 00007ff81234a005       64
+
+Statistics:
+              MT    Count    TotalSize Class Name
+00007ff81234a005        2          128 DotnetCrash.Config
+Total 2 objects"""
+
+    def test_basic_call(self, dialog):
+        dialog._run_one_command.return_value = self.CANNED_OUTPUT
+        cmd, out = llm_dump_heap_type(dialog, typename="DotnetCrash.Config")
+        assert cmd == "!DumpHeap -type DotnetCrash.Config"
+        dialog._run_one_command.assert_called_once_with("!DumpHeap -type DotnetCrash.Config")
+        assert "DotnetCrash.Config" in out
+
+    def test_error_handling(self, dialog):
+        dialog._run_one_command.side_effect = RuntimeError("type not found")
+        cmd, out = llm_dump_heap_type(dialog, typename="Bad.Type")
+        assert "Error dumping heap for type" in out
+
+
+class TestGcRoot:
+    CANNED_OUTPUT = """\
+Thread 4a2c:
+    000000AB1234EF00 00007FF812345678 DotnetCrash.Program.ProcessData(System.String)
+        rbp+10: 000000ab1234ef10
+            ->  000001C4A8033040 DotnetCrash.Config
+
+Found 2 roots."""
+
+    def test_basic_call(self, dialog):
+        dialog._run_one_command.return_value = self.CANNED_OUTPUT
+        cmd, out = llm_gc_root(dialog, address="000001C4A8033040")
+        assert cmd == "!GCRoot 000001C4A8033040"
+        dialog._run_one_command.assert_called_once_with("!GCRoot 000001C4A8033040")
+        assert "Found 2 roots" in out
+
+    def test_error_handling(self, dialog):
+        dialog._run_one_command.side_effect = RuntimeError("invalid address")
+        cmd, out = llm_gc_root(dialog, address="badaddr")
+        assert "Error tracing GC roots" in out
+
+
+class TestManagedThreads:
+    CANNED_OUTPUT = """\
+ThreadCount:      3
+UnstartedThread:  0
+BackgroundThread: 1
+                                                                                                        Lock
+       ID OSID ThreadOBJ           State GC Mode     GC Alloc Context                  Domain           Count Apt Exception
+   0    1 4a2c 000001C4A0012340  2020020 Preemptive  000001C4A8035010:000001C4A8035FE0 000001c4a0001230 0     Ukn System.NullReferenceException 000001c4a8034500
+   3    2 5b3d 000001C4A0012380  2b220b0 Preemptive  0000000000000000:0000000000000000 000001c4a0001230 0     Ukn (Finalizer)"""
+
+    def test_basic_call(self, dialog):
+        dialog._run_one_command.return_value = self.CANNED_OUTPUT
+        cmd, out = llm_managed_threads(dialog)
+        assert cmd == "!Threads"
+        dialog._run_one_command.assert_called_once_with("!Threads")
+        assert "ThreadCount" in out
+        assert "Finalizer" in out
+
+    def test_error_handling(self, dialog):
+        dialog._run_one_command.side_effect = RuntimeError("no CLR")
+        cmd, out = llm_managed_threads(dialog)
+        assert "Error listing managed threads" in out
+
+
+class TestEeStack:
+    CANNED_OUTPUT = """\
+---------------------------------------------
+Thread   0
+Current frame: ntdll!NtWaitForSingleObject+0x14
+Child-SP         RetAddr          Call Site
+000000AB1234EF00 00007FF812345678 DotnetCrash.Program.ProcessData(System.String)
+000000AB1234EF40 00007FF823456789 DotnetCrash.Program.Main(System.String[])
+
+---------------------------------------------
+Thread   3
+Current frame: ntdll!NtWaitForSingleObject+0x14"""
+
+    def test_basic_call(self, dialog):
+        dialog._run_one_command.return_value = self.CANNED_OUTPUT
+        cmd, out = llm_ee_stack(dialog)
+        assert cmd == "!EEStack"
+        dialog._run_one_command.assert_called_once_with("!EEStack")
+        assert "Thread   0" in out
+        assert "Thread   3" in out
+
+    def test_error_handling(self, dialog):
+        dialog._run_one_command.side_effect = RuntimeError("no CLR")
+        cmd, out = llm_ee_stack(dialog)
+        assert "Error getting EE stacks" in out
+
+
+class TestNameToEe:
+    CANNED_OUTPUT = """\
+Module:      00007ff81234abcd
+Assembly:    DotnetCrash.dll
+Token:       0x02000003
+MethodTable: 00007ff81234a005
+EEClass:     00007ff81234ef02
+Name:        DotnetCrash.Config"""
+
+    def test_basic_call(self, dialog):
+        dialog._run_one_command.return_value = self.CANNED_OUTPUT
+        cmd, out = llm_name_to_ee(dialog, module="DotnetCrash", typename="DotnetCrash.Config")
+        assert cmd == "!Name2EE DotnetCrash DotnetCrash.Config"
+        dialog._run_one_command.assert_called_once_with("!Name2EE DotnetCrash DotnetCrash.Config")
+        assert "MethodTable" in out
+
+    def test_error_handling(self, dialog):
+        dialog._run_one_command.side_effect = RuntimeError("module not found")
+        cmd, out = llm_name_to_ee(dialog, module="Bad", typename="Bad.Type")
+        assert "Error resolving name" in out
+
+
 # ---------------------------------------------------------------------------
 # Convenience list sanity checks
 # ---------------------------------------------------------------------------
@@ -221,6 +398,17 @@ def test_ttd_tools_list():
 
 
 def test_dotnet_tools_list():
-    assert len(DOTNET_TOOLS) == 3
+    assert len(DOTNET_TOOLS) == 10
     names = {json.loads(f.__doc__)["name"] for f in DOTNET_TOOLS}
-    assert names == {"managed_stack", "inspect_object", "dump_stack_objects"}
+    assert names == {
+        "managed_stack",
+        "inspect_object",
+        "dump_stack_objects",
+        "print_exception",
+        "dump_heap_stat",
+        "dump_heap_type",
+        "gc_root",
+        "managed_threads",
+        "ee_stack",
+        "name_to_ee",
+    }

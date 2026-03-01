@@ -236,6 +236,7 @@ class TestSupportedFunctionsWithDotnet:
         functions = dialog._supported_functions()
         func_docs = " ".join(f.__doc__ or "" for f in functions)
         assert "managed_stack" in func_docs
+        assert "print_exception" in func_docs
 
 
 class TestJsExtensionDiscovery:

@@ -1,0 +1,12 @@
+Thread 4a2c:
+    000000AB1234EF00 00007FF812345678 DotnetCrash.Program.ProcessData(System.String)
+        rbp+10: 000000ab1234ef10
+            ->  000001C4A8033040 DotnetCrash.Config
+            ->  000001C4A8032FD0 System.String
+
+HandleTable:
+    000001C4A0001234 (pinned handle)
+    -> 000001C4A8033080 System.Object[]
+    -> 000001C4A8033040 DotnetCrash.Config
+
+Found 2 roots.

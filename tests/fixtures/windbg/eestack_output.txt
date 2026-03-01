@@ -1,0 +1,18 @@
+---------------------------------------------
+Thread   0
+Current frame: ntdll!NtWaitForSingleObject+0x14
+Child-SP         RetAddr          Call Site
+000000AB1234EF00 00007FF812345678 DotnetCrash.Program.ProcessData(System.String)
+000000AB1234EF40 00007FF823456789 DotnetCrash.Program.Main(System.String[])
+
+---------------------------------------------
+Thread   3
+Current frame: ntdll!NtWaitForSingleObject+0x14
+Child-SP         RetAddr          Call Site
+000000CD1234EF00 00007FF812345AAA [DebuggerU2MCatchHandlerFrame: 000000cd1234ef00]
+
+---------------------------------------------
+Thread   4
+Current frame: ntdll!NtWaitForMultipleObjects+0x14
+Child-SP         RetAddr          Call Site
+000000EF1234EF00 00007FF812345BBB [GCFrame: 000000ef1234ef00]

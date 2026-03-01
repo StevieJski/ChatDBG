@@ -1,0 +1,11 @@
+ThreadCount:      3
+UnstartedThread:  0
+BackgroundThread: 1
+PendingThread:    0
+DeadThread:       0
+Hosted Runtime:   no
+                                                                                                        Lock
+       ID OSID ThreadOBJ           State GC Mode     GC Alloc Context                  Domain           Count Apt Exception
+   0    1 4a2c 000001C4A0012340  2020020 Preemptive  000001C4A8035010:000001C4A8035FE0 000001c4a0001230 0     Ukn System.NullReferenceException 000001c4a8034500
+   3    2 5b3d 000001C4A0012380  2b220b0 Preemptive  0000000000000000:0000000000000000 000001c4a0001230 0     Ukn (Finalizer)
+   4    3 6c4e 000001C4A00123c0  1020220 Preemptive  000001C4A8036010:000001C4A8036FE0 000001c4a0001230 0     Ukn (Threadpool Worker)

@@ -22,7 +22,13 @@ For .NET applications, distinguish CLR runtime frames from user
 code. Focus on user frames for root cause analysis. Common managed
 exceptions include NullReferenceException, StackOverflowException,
 AccessViolationException, and ObjectDisposedException. Use SOS
-commands to inspect managed objects and their fields.
+commands to inspect managed objects and their fields. Start with
+`print_exception` to see the full exception chain including inner
+exceptions. Use `managed_threads` for thread overview and
+`ee_stack` for all managed stacks (helpful for deadlocks). For
+heap analysis, use `dump_heap_stat` to find suspicious type counts,
+`dump_heap_type` to list instances, and `gc_root` to trace why an
+object is still alive.
 
 If Time Travel Debugging (TTD) is available, use TTD tools to
 travel backward in execution and verify hypotheses about when and

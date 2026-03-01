@@ -1,0 +1,12 @@
+Statistics:
+              MT    Count    TotalSize Class Name
+00007ff81234a001        1           24 System.Collections.Generic.GenericEqualityComparer`1[[System.String, System.Private.CoreLib]]
+00007ff81234a002       12          528 System.String[]
+00007ff81234a003       45        1,440 System.Object[]
+00007ff81234a004      312        7,488 System.String
+00007ff81234a005        2          128 DotnetCrash.Config
+00007ff81234a006        1           56 DotnetCrash.Program
+00007ff81234a007       23          736 System.Int32[]
+00007ff81234a008        5          240 System.IO.StreamReader
+00007ff81234a009        1           72 System.Text.StringBuilder
+Total 402 objects
