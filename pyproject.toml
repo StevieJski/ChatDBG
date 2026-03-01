@@ -41,3 +41,6 @@ print_chatdbg_log = "chatdbg.util.plog:main"
 [project.urls]
 "Homepage" = "https://github.com/plasma-umass/ChatDBG"
 "Bug Tracker" = "https://github.com/plasma-umass/ChatDBG/issues"
+
+[project.optional-dependencies]
+windbg = ["pykd>=0.3.4"]

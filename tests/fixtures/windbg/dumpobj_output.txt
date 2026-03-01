@@ -1,0 +1,12 @@
+Name:        System.String
+MethodTable: 00007ff81234abcd
+EEClass:     00007ff81234ef01
+Tracked Type: false
+Size:        72(0x48) bytes
+File:        C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.0\System.Private.CoreLib.dll
+String:      Hello, World!
+Fields:
+              MT    Field   Offset                 Type VT     Attr            Value Name
+00007ff81234ab01  4000281        8         System.Int32  1 instance               13 _stringLength
+00007ff81234ab02  4000282        c          System.Char  1 instance               48 _firstChar
+00007ff81234ab03  4000283       10        System.String  0   static 000001c4a8001420 Empty

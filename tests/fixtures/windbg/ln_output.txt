@@ -1,0 +1,4 @@
+(00007ff7`12340015)   crash_sample!main+0x15   |  (00007ff7`12340050)   crash_sample!helper
+Exact matches:
+    d:\src\crash_sample\main.c (10)
+    [d:\src\crash_sample\main.c @ 10]

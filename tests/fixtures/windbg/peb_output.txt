@@ -1,0 +1,21 @@
+PEB at 000000ab12340000
+    InheritedAddressSpace:    No
+    ReadImageFileExecOptions: No
+    BeingDebugged:            Yes
+    ImageBaseAddress:         00007ff712340000
+    NtGlobalFlag:             70
+    NtGlobalFlag2:            0
+    Ldr                       00007ff823450000
+    Ldr.Initialized:          Yes
+    Ldr.InInitializationOrderModuleList: 000001c4a8010000 . 000001c4a8020000
+    Ldr.InLoadOrderModuleList:           000001c4a8010010 . 000001c4a8020010
+    Ldr.InMemoryOrderModuleList:         000001c4a8010020 . 000001c4a8020020
+    SubSystemData:     00000000
+    ProcessHeap:       000001c4a8000000
+    ProcessParameters: 000001c4a8001000
+    CurrentDirectory:  'D:\src\crash_sample\'
+    WindowTitle:       'D:\src\crash_sample\crash_sample.exe'
+    ImageFile:         'D:\src\crash_sample\crash_sample.exe'
+    CommandLine:       'D:\src\crash_sample\crash_sample.exe arg1 arg2'
+    DllPath:           '< Name not readable >'
+    Environment:       000001c4a8002000

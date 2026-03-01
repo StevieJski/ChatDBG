@@ -1,0 +1,3 @@
+          int * ptr = 0x00000000`00000000
+          int   argc = 0n1
+         char ** argv = 0x000001c4`a8030000

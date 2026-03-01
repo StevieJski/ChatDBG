@@ -1,0 +1,19 @@
+@$curprocess.TTD.Calls("kernel32!CreateFileW")
+    [0x0]
+        Function         : kernel32!CreateFileW
+        FunctionAddress  : 0x7ff8234560a0
+        ReturnAddress    : 0x7ff712340050
+        ReturnValue      : 0xffffffffffffffff
+        TimeStart        : 10:5 [Time Travel]
+        TimeEnd          : 10:8 [Time Travel]
+        ThreadId         : 0x4a2c
+        UniqueThreadId   : 0x2
+    [0x1]
+        Function         : kernel32!CreateFileW
+        FunctionAddress  : 0x7ff8234560a0
+        ReturnAddress    : 0x7ff712340080
+        ReturnValue      : 0x0000000000000044
+        TimeStart        : 15:3 [Time Travel]
+        TimeEnd          : 15:7 [Time Travel]
+        ThreadId         : 0x4a2c
+        UniqueThreadId   : 0x2

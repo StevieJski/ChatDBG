@@ -93,6 +93,11 @@ class ChatDBGConfig(Configurable):
         help="Disable any protections against GPT running harmful code or commands",
     ).tag(config=True)
 
+    dry_run = Bool(
+        _chatdbg_get_env("dry_run", False),
+        help="Skip LLM calls, print prompt instead (for testing)",
+    ).tag(config=True)
+
     _user_configurable = [
         log,
         model,
@@ -100,6 +105,7 @@ class ChatDBGConfig(Configurable):
         format,
         module_whitelist,
         unsafe,
+        dry_run,
     ]
 
     def _parser(self):
@@ -131,6 +137,7 @@ class ChatDBGConfig(Configurable):
             "format": self.format,
             "instructions": self.instructions,
             "module_whitelist": self.module_whitelist,
+            "dry_run": self.dry_run,
         }
 
     def parse_user_flags(self, argv: list[str]) -> None:

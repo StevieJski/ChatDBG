@@ -1,0 +1,44 @@
+*******************************************************************************
+*                                                                             *
+*                        Exception Analysis                                   *
+*                                                                             *
+*******************************************************************************
+
+EXCEPTION_CODE: (NTSTATUS) 0xc0000005 - The instruction at 0x%p referenced memory at 0x%p. The memory could not be %s.
+
+FAULTING_IP:
+crash_sample!main+15
+00007ff7`12340015 488b01          mov     rax,qword ptr [rcx]
+
+EXCEPTION_RECORD:  (.exr -1)
+ExceptionAddress: 00007ff712340015 (crash_sample!main+0x0000000000000015)
+   ExceptionCode: c0000005 (Access violation)
+  ExceptionFlags: 00000000
+NumberParameters: 2
+   Parameter[0]: 0000000000000000
+   Parameter[1]: 0000000000000000
+Attempt to read from address 0000000000000000
+
+PROCESS_NAME:  crash_sample.exe
+
+ERROR_CODE: (NTSTATUS) 0xc0000005 - The instruction at 0x%p referenced memory at 0x%p. The memory could not be %s.
+
+EXCEPTION_CODE_STR:  c0000005
+
+EXCEPTION_PARAMETER1:  0000000000000000
+
+EXCEPTION_PARAMETER2:  0000000000000000
+
+STACK_TEXT:
+000000ab`1234ef00 00007ff8`12345678 : crash_sample!main+0x15
+000000ab`1234ef30 00007ff8`23456789 : crash_sample!__scrt_common_main_seh+0x10c
+000000ab`1234ef70 00007ff8`3456789a : KERNEL32!BaseThreadInitThunk+0x1d
+000000ab`1234efa0 00000000`00000000 : ntdll!RtlUserThreadCallbackDispatcher+0x4e
+
+SYMBOL_NAME:  crash_sample!main+15
+
+MODULE_NAME: crash_sample
+
+IMAGE_NAME:  crash_sample.exe
+
+FAILURE_BUCKET_ID:  NULL_POINTER_READ_c0000005_crash_sample.exe!main

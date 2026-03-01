@@ -1,0 +1,9 @@
+@$curprocess.TTD.Events.Where(t => t.Type == "Exception")
+    [0x0]            : Exception of type CPlusPlus at position: 35:12
+                       Type             : Exception
+                       Position         : 35:12 [Time Travel]
+                       Exception        : Exception 0xE06D7363 of type CPlusPlus at 00007FF712340100
+    [0x1]            : Exception of type Hardware at position: 42:5
+                       Type             : Exception
+                       Position         : 42:5 [Time Travel]
+                       Exception        : Exception 0xC0000005 of type Hardware at 00007FF712340200
