@@ -11,7 +11,17 @@ Usage::
 """
 
 import argparse
+import shutil
 import sys
+
+
+def _find_cdb():
+    """Find CDB on PATH, trying 'cdb' first then the WinDbg Store name."""
+    for name in ("cdb", "cdbX64.exe", "cdbX86.exe"):
+        path = shutil.which(name)
+        if path:
+            return name
+    return "cdb"  # fall back and let the OS error explain what's missing
 
 
 def main():
@@ -32,9 +42,9 @@ def main():
     )
     parser.add_argument(
         "--cdb",
-        default="cdb",
+        default=None,
         metavar="PATH",
-        help="Path to the CDB executable (default: cdb on PATH)",
+        help="Path to the CDB executable (default: auto-detect)",
     )
     parser.add_argument(
         "target",
@@ -66,6 +76,8 @@ def main():
         # For live targets, run to the crash/exception
         initial_commands.append("g")
 
+    cdb_exe = args.cdb or _find_cdb()
+
     # Import cdb_proxy and inject it as 'pykd' BEFORE importing chatdbg_windbg,
     # because chatdbg_windbg does `import pykd` at module load time.
     from chatdbg import cdb_proxy
@@ -77,7 +89,7 @@ def main():
         cdb_proxy.init(
             target_exe=args.target,
             target_args=target_args,
-            cdb_exe=args.cdb,
+            cdb_exe=cdb_exe,
             initial_commands=initial_commands,
             dump_file=args.dump,
         )

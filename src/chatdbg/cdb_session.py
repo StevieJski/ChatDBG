@@ -13,7 +13,7 @@ import uuid
 
 
 # Regex matching the CDB prompt, e.g. "0:000> " or "1:023> "
-_PROMPT_RE = re.compile(r"^\s*\d+:\d{3}>\s*$")
+_PROMPT_RE = re.compile(r"^\s*\d+:\d{3}>\s?$")
 
 # Commands that resume target execution (not safe for marker-based execute())
 _CONTINUE_CMDS = {"g", "go", "t", "p", "pt", "pa", "tt", "ta", "gh", "gn"}
@@ -182,25 +182,48 @@ class CDBSession:
 
     def _reader_thread(self):
         """
-        Daemon thread that continuously reads CDB stdout line-by-line,
-        buffers output, and signals when markers or prompts are detected.
+        Daemon thread that reads CDB stdout byte-by-byte, building up
+        lines.  CDB does NOT send a newline after its prompt (e.g.
+        ``0:000> ``), so we cannot use readline().  Instead we accumulate
+        characters and check for the prompt pattern whenever we see
+        ``> `` — the universal suffix of every CDB prompt.
         """
+        line_buf = []
         try:
-            for raw_line in iter(self._proc.stdout.readline, b""):
-                line = raw_line.decode("utf-8", errors="replace").rstrip("\r\n")
+            while True:
+                byte = self._proc.stdout.read(1)
+                if not byte:
+                    # EOF — process exited
+                    break
 
-                # Check for marker
-                with self._buf_lock:
-                    if self._current_marker and self._current_marker in line:
-                        self._marker_event.set()
-                        continue
-                    self._buf.append(line)
+                ch = byte.decode("utf-8", errors="replace")
 
-                # Check for CDB prompt (secondary signal)
-                if _PROMPT_RE.match(line.strip()):
-                    self._at_prompt.set()
+                if ch == "\n":
+                    line = "".join(line_buf).rstrip("\r")
+                    line_buf.clear()
+                    self._process_line(line)
+                elif ch == " " and len(line_buf) >= 5:
+                    # Check for prompt suffix "> " without waiting for \n.
+                    # CDB prompts look like "0:000> " — always end with "> ".
+                    partial = "".join(line_buf) + " "
+                    if _PROMPT_RE.match(partial):
+                        # This is a prompt line — signal and do NOT buffer it
+                        line_buf.clear()
+                        self._at_prompt.set()
+                    else:
+                        line_buf.append(ch)
+                else:
+                    line_buf.append(ch)
         except Exception:
             pass
+
+    def _process_line(self, line):
+        """Handle a complete newline-terminated line from CDB."""
+        with self._buf_lock:
+            if self._current_marker and self._current_marker in line:
+                self._marker_event.set()
+                return
+            self._buf.append(line)
 
     def _clean_output(self, output, command, marker):
         """
