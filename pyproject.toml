@@ -20,7 +20,7 @@ dependencies = [
   "ipdb>=0.13.13",
   "ipython>=9.0.0",
   "pygments>=2.0.0",
-  "litellm==1.55.9",
+  "litellm>=1.81.0",
   "PyYAML>=6.0.1",
   "ipyflow>=0.0.130",
   "numpy>=1.26.3",

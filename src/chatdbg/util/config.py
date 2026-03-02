@@ -36,7 +36,7 @@ class DBGParser(argparse.ArgumentParser):
 
 
 class ChatDBGConfig(Configurable):
-    model = Unicode(_chatdbg_get_env("model", "gpt-4o"), help="The LLM model").tag(
+    model = Unicode(_chatdbg_get_env("model", "gpt-5.3-codex"), help="The LLM model").tag(
         config=True
     )
 

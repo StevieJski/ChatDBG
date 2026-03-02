@@ -32,7 +32,7 @@ class Assistant:
     def __init__(
         self,
         instructions,
-        model="gpt-4o",
+        model="gpt-5.3-codex",
         timeout=30,
         listeners=[Printer()],
         functions=[],
