@@ -50,8 +50,31 @@ class Assistant:
 
         self._model = model
         self._timeout = timeout
-        self._conversation = [{"role": "system", "content": instructions}]
         self._max_call_response_tokens = max_call_response_tokens
+
+        # Detect provider to branch between Responses API and Chat Completions
+        try:
+            _, self._provider, _, _ = litellm.get_llm_provider(model)
+        except Exception:
+            self._provider = None
+        self._use_responses_api = self._provider == "chatgpt"
+
+        if self._use_responses_api:
+            # Responses API: instructions as top-level param, input items list
+            self._instructions = instructions
+            self._input = []
+            self._tools = [
+                {
+                    "type": "function",
+                    "name": schema["name"],
+                    "description": schema["description"],
+                    "parameters": schema["parameters"],
+                }
+                for schema in (f["schema"] for f in self._functions.values())
+            ]
+        else:
+            # Chat Completions: system message in conversation
+            self._conversation = [{"role": "system", "content": instructions}]
 
         self._check_model()
         self._broadcast("on_begin_dialog", instructions)
@@ -123,8 +146,7 @@ class Assistant:
         result = litellm.validate_environment(self._model)
         missing_keys = result["missing_keys"]
         if missing_keys != []:
-            _, provider, _, _ = litellm.get_llm_provider(self._model)
-            if provider == "openai":
+            if self._provider == "openai":
                 raise AssistantError(textwrap.dedent(f"""\
                     You need an OpenAI key to use the {self._model} model.
                     You can get a key here: https://platform.openai.com/api-keys.
@@ -133,6 +155,11 @@ class Assistant:
                 raise AssistantError(textwrap.dedent(f"""\
                     You need to set the following environment variables
                     to use the {self._model} model: {', '.join(missing_keys)}."""))
+
+        # chatgpt provider supports tools via the Responses API, but
+        # litellm.supports_function_calling() returns False for it.
+        if self._use_responses_api:
+            return
 
         try:
             if not litellm.supports_function_calling(self._model):
@@ -154,6 +181,7 @@ class Assistant:
         self._functions[schema["name"]] = {"function": function, "schema": schema}
 
     def _make_call(self, tool_call) -> str:
+        """Process a Chat Completions tool_call (has .function.name, .function.arguments)."""
         name = tool_call.function.name
         try:
             args = json.loads(tool_call.function.arguments)
@@ -169,7 +197,95 @@ class Assistant:
             self._broadcast("on_warn", result)
         return result
 
+    def _make_call_from_response(self, item) -> str:
+        """Process a Responses API function_call item (has .name, .arguments directly)."""
+        name = item.name
+        try:
+            args = json.loads(item.arguments)
+            function = self._functions[name]
+            call, result = function["function"](**args)
+            result = remove_non_printable_chars(strip_ansi(result).expandtabs())
+            result = sandwich_tokens(
+                result, self._model, self._max_call_response_tokens, 0.5
+            )
+            self._broadcast("on_function_call", call, result)
+        except KeyboardInterrupt as e:
+            raise e
+        except Exception as e:
+            result = f"Exception in function call: {e}"
+            self._broadcast("on_warn", result)
+        return result
+
     def _streamed_query(self, prompt: str, user_text):
+        if self._use_responses_api:
+            return self._responses_query(prompt, user_text)
+        else:
+            return self._completions_query(prompt, user_text)
+
+    def _responses_query(self, prompt: str, user_text):
+        """Query using the Responses API (for chatgpt provider)."""
+        self._input.append({"role": "user", "content": prompt})
+
+        total_input_tokens = 0
+        total_output_tokens = 0
+
+        while True:
+            resp = litellm.responses(
+                model=self._model,
+                input=self._input,
+                instructions=self._instructions,
+                tools=self._tools if self._tools else None,
+                timeout=self._timeout,
+                stream=False,
+            )
+
+            if resp.usage:
+                total_input_tokens += resp.usage.input_tokens
+                total_output_tokens += resp.usage.output_tokens
+
+            has_function_calls = False
+            for item in resp.output:
+                if item.type == "message":
+                    text = "".join(
+                        c.text for c in item.content if hasattr(c, "text")
+                    )
+                    if text:
+                        self._broadcast("on_begin_stream")
+                        self._broadcast("on_stream_delta", text)
+                        self._broadcast("on_end_stream")
+                        self._broadcast("on_response", text)
+                        self._input.append(
+                            {"role": "assistant", "content": text}
+                        )
+                elif item.type == "function_call":
+                    has_function_calls = True
+                    self._input.append({
+                        "type": "function_call",
+                        "id": item.id,
+                        "call_id": item.call_id,
+                        "name": item.name,
+                        "arguments": item.arguments,
+                    })
+                    result = self._make_call_from_response(item)
+                    self._input.append({
+                        "type": "function_call_output",
+                        "call_id": item.call_id,
+                        "output": result,
+                    })
+
+            if not has_function_calls:
+                break
+
+        stats = {
+            "cost": 0,
+            "tokens": total_input_tokens + total_output_tokens,
+            "prompt_tokens": total_input_tokens,
+            "completion_tokens": total_output_tokens,
+        }
+        return stats
+
+    def _completions_query(self, prompt: str, user_text):
+        """Query using the Chat Completions API (for standard providers)."""
         cost = 0
 
         self._conversation.append({"role": "user", "content": prompt})
