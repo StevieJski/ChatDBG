@@ -47,7 +47,7 @@ that cannot be done with individual debugger commands — for example,
 walking data structures, correlating heap metadata, iterating over
 threads or modules, or building summaries from multiple queries.
 Write the function body only (it will be wrapped in `function run()
-{ ... }` automatically). Use `return` to send results back.
+{{ ... }}` automatically). Use `return` to send results back.
 Available APIs include: `host.currentProcess`, `host.currentThread`,
 `host.currentSession`, `host.memory`, `host.parseInt64()`,
 `host.namespace.Debugger.Utility.Control.ExecuteCommand()` to run

@@ -85,6 +85,8 @@ def build_enriched_stacktrace(summaries):
     for summary in summaries:
         if isinstance(summary, _FrameSummaryEntry):
             file_path, lineno = summary.file_path(), summary.lineno()
+            if file_path is None or lineno is None:
+                continue
             lines, first = llm_utils.read_lines(file_path, lineno - 10, lineno + 9)
             block = llm_utils.number_group_of_lines(lines, first)
             block = textwrap.indent(block, "  ")

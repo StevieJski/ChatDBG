@@ -31,6 +31,8 @@ def windbg_command_is_safe(cmd: str) -> bool:
         # SOS / CLR diagnostics
         "!clrstack", "!dumpobj", "!dumpstackobjects", "!dumpheap",
         "!dumpmt", "!name2ee", "!eestack", "!threads", "!gcroot", "!pe",
+        "!syncblk", "!finalizequeue", "!dumparray", "!threadpool",
+        "!dumpasync", "!dumpvc", "!dumpdomain", "!dumpmodule",
         # TTD
         "!tt", "!positions",
         # Info
